@@ -1,5 +1,12 @@
-FROM ppc64le/ubuntu:20.04
+FROM ubuntu:20.04
 LABEL author="Serge NOEL <serge.noel@easylinux.fr>"
+
+# Edit those parameter before building
+# goarch="<amd|ppc6Ele|arm64>
+ARG goarch=ppc64le
+# nodearch="<amd|ppc64le|arm64>
+ARG nodearch=ppc64le
+
 
 RUN apt-get update -y
 RUN apt-get upgrade -y
@@ -35,14 +42,14 @@ RUN wget https://cache.ruby-lang.org/pub/ruby/2.7/ruby-2.7.2.tar.gz \
 
 # Install go
 RUN rm -rf /usr/local/go
-RUN wget https://dl.google.com/go/go1.13.5.linux-ppc64le.tar.gz
-RUN tar -C /usr/local -zxf go1.13.5.linux-ppc64le.tar.gz
+RUN wget https://dl.google.com/go/go1.13.5.linux-${goarch}.tar.gz
+RUN tar -C /usr/local -zxf go1.13.5.linux-${goarch}.tar.gz
 RUN ln -sf /usr/local/go/bin/{go,godoc,gofmt} /usr/local/bin/
 
-# Install node et yarn
-RUN wget https://nodejs.org/download/release/latest-v12.x/node-v12.20.0-linux-ppc64le.tar.gz
-RUN tar zxf node-v12.20.0-linux-ppc64le.tar.gz
-RUN cd node-v12.20.0-linux-ppc64le \
+# Install node et yarn   arm64 x64
+RUN wget https://nodejs.org/download/release/v14.15.4/node-v14.15.4-linux-${nodearch}.tar.gz
+RUN tar zxf node-v14.15.4-linux-${nodearch}.tar.gz
+RUN cd node-v14.15.4-linux-${nodearch} \
     && cp -r * /usr 
 
 RUN wget https://classic.yarnpkg.com/latest.tar.gz 
@@ -63,7 +70,7 @@ WORKDIR /home/git/gitlab
 USER root
 COPY Files/ /
 RUN apt-get install -y tree
-RUN chown -R git: *
+RUN chown -R git: /home/git/*
 RUN ls -l config
 RUN chmod 0600 config/secrets.yml
 RUN chmod -R u+rwX,go-w log/
@@ -76,15 +83,17 @@ RUN chmod 0700 public/uploads
 RUN chmod -R u+rwX builds/
 RUN chmod -R u+rwX shared/artifacts/
 RUN chmod -R ug+rwX shared/pages/
-RUN git config --global core.autocrlf input
-RUN git config --global gc.auto 0
-RUN git config --global repack.writeBitmaps true
-RUN git config --global receive.advertisePushOptions true
-RUN git config --global core.fsyncObjectFiles true
+RUN sudo git config --global core.autocrlf input
+RUN sudo git config --global gc.auto 0
+RUN sudo git config --global repack.writeBitmaps true
+RUN sudo git config --global receive.advertisePushOptions true
+RUN sudo git config --global core.fsyncObjectFiles true
 
 # Installation
-RUN bundle -v
-
+RUN sudo apt-get install -y libpq-dev postgresql-server-dev-12
+RUN sudo chown git: /home/git
+#RUN bundle config set without 'development test mysql aws kerberos' \
+#    && bundle install
 
 
 
